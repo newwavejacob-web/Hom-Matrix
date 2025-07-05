@@ -1,4 +1,4 @@
-# configuration.nix - Updated to work with flakes and Home Manager
+# configuration.nix - Power user keyboard-centric configuration
 { config, pkgs, inputs, ... }:
 
 {
@@ -42,14 +42,47 @@
     LC_TIME = "en_US.UTF-8";
   };
 
-  # Desktop environment
+  # X11 and Window Manager setup
   services.xserver = {
     enable = true;
-    displayManager.lightdm.enable = true;
-    desktopManager.pantheon.enable = true;
+    dpi = 156;
+    windowManager.i3 = {
+      enable = true;
+      extraPackages = with pkgs; [
+        dmenu           # Application launcher
+        i3status        # Status bar
+        i3lock          # Screen locker
+        i3blocks        # Alternative status bar
+        rofi            # Better application launcher
+        polybar         # Modern status bar
+        picom           # Compositor for transparency/effects
+        feh             # Wallpaper setter
+        maim            # Screenshot tool
+        xclip           # Clipboard manager
+        xorg.xrandr     # Display configuration
+        arandr          # GUI for xrandr
+        autorandr       # Automatic display configuration
+        dunst           # Notification daemon
+        redshift        # Blue light filter
+        playerctl       # Media player control
+        brightnessctl   # Brightness control
+        pavucontrol     # Audio control GUI
+        blueman         # Bluetooth manager
+      ];
+    };
     xkb = {
       layout = "us";
       variant = "";
+    };
+  };
+
+  # Display manager configuration
+  services.xserver.displayManager.lightdm.enable = true;
+  services.displayManager = {
+    defaultSession = "none+i3";
+    autoLogin = {
+      enable = true;
+      user = "jacob";
     };
   };
 
@@ -66,18 +99,30 @@
   # Printing
   services.printing.enable = true;
 
+  # Bluetooth
+  hardware.bluetooth.enable = true;
+  services.blueman.enable = true;
+
+  # Location service for redshift
+  location.provider = "geoclue2";
+  services.redshift = {
+    enable = true;
+    brightness = {
+      day = "1";
+      night = "0.8";
+    };
+    temperature = {
+      day = 5500;
+      night = 3700;
+    };
+  };
+
   # User configuration
   users.users.jacob = {
     isNormalUser = true;
     description = "jacob";
-    extraGroups = [ "networkmanager" "wheel" "docker" "adbusers" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" "adbusers" "video" "audio" ];
     shell = pkgs.zsh;
-  };
-
-  # Auto login
-  services.displayManager.autoLogin = {
-    enable = true;
-    user = "jacob";
   };
 
   # System-wide programs
@@ -90,7 +135,7 @@
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.android_sdk.accept_license = true;
 
-  # System packages (reduced since most moved to Home Manager)
+  # System packages
   environment.systemPackages = with pkgs; [
     # Essential system tools
     git
@@ -101,16 +146,50 @@
     # Development essentials that should be system-wide
     docker
 
-    # Fonts
+    # Fonts for better text rendering
     jetbrains-mono
     fira-code
+    font-awesome
+
+    # System utilities for power users
+    htop
+    btop
+    tree
+    fd
+    ripgrep
+    bat
+    eza
+    zoxide
+
+    # Terminal multiplexer and session management
+    tmux
+
+    # File manager
+    ranger
+
+    # Network tools
+    networkmanagerapplet
   ];
 
   # Virtualization
   virtualisation.docker.enable = true;
 
-  # Hardware - Updated deprecated option
+  # Hardware
   hardware.graphics.enable = true;
+
+  # Security
+  security.sudo.wheelNeedsPassword = false; # Optional: passwordless sudo for wheel group
+
+  # Fonts - Fixed nerdfonts configuration
+  fonts.packages = with pkgs; [
+    jetbrains-mono
+    fira-code
+    font-awesome
+    # New nerd fonts syntax
+    nerd-fonts.jetbrains-mono
+    nerd-fonts.fira-code
+    nerd-fonts.droid-sans-mono
+  ];
 
   # System version
   system.stateVersion = "25.05";
